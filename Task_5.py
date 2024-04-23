@@ -101,7 +101,7 @@ def parse_args():
     # Add the main flags
     parser.add_argument('--test_defuant', action='store_true', help='Add this flag to enable test_defuant')
     parser.add_argument('--defuant', action='store_true', help='Add this flag to enable defuant')
-    parser.add_argument('--use_network', type=int, default=10, help='add this flag to enable network, value for size of network')
+    parser.add_argument('--use_network', type=int, default=None, help='add this flag to enable network, value for size of network')
 
     # Add optional flags with default values
     parser.add_argument('--beta', type=float, default=0.2, help='Value for beta (default: 0.2)')
