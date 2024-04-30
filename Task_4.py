@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import sys
+import argparse
 
 class Node:
 
@@ -50,63 +50,98 @@ class Network:
 	def make_ring_network(self, N, neighbour_range=1):
 		'''
 		This function makes a ring network of size N.
+		
 		The ring has a range of 1 meaning each node is connected to its neighbours only.
 		'''
-
+		#stores the nodes in a list with corresponding value, number and connections
 		self.nodes = []
 		for node_number in range(N):
 			value = np.random.random()
 			connections = [0 for _ in range(N)]
 			self.nodes.append(Node(value, node_number, connections))
 		
-
+		#loops through the nodes in the ring network
 		for (index, node) in enumerate(self.nodes):
 			for neighbour_index in range(N):
 				
+				#modulus ensures that the code will loop through the index of neighbours	
+				#prev_index is the previous node before the current node in the loop
 				prev_index = (neighbour_index - 1) % N 
+				#next_index is the next node after the current node in the loop
 				next_index = (neighbour_index + 1) % N 
-					
+				
+				#adds a connection to the previous node in relation to the current node in the loop
 				self.nodes[neighbour_index].connections[prev_index] = 1
+				#adds a connection to the next node in relation to the current node in the loop
 				self.nodes[neighbour_index].connections[next_index] = 1
 
 	def make_small_world_network(self, N, re_wire_prob=0.2):
 		'''
 		This function makes a small world network of size N.
+		
 		The default re-wire probability is set to 0.2 unless a value is input as a command line argument.
+		If a value for the re_wire probability is input then this becomes the value that is used as the
+		re_wire probability.
 		The re-wire probability determines the number of connections that are randomly changed.
+		The number of connections within the small world network remains the same before and after being
+		re-wired.
+		After being re-wired some nodes will have no nodes and some will have multiple.
+		If the re-wire probability is set to 0 the small world network will be a ring network with a neighbour
+		range of 2. 
+		If the re-wire probability is set to a high value (for example, 0.95) then the small world network will be
+		very random and will resemble a random network more closely.
 		'''
 		
+		#stores the nodes in a list with corresponding value, number and connections
 		self.nodes = []
 		for node_number in range(N):
 			value = np.random.random()
 			connections = [0 for _ in range(N)]
 			self.nodes.append(Node(value, node_number, connections))
 		
+		#loops through the nodes in the small world network
 		for (index, node) in enumerate(self.nodes):
 			for neighbour_index in range(N):
 				
+				#the variables prev_index_1 and next_index_1 represent the neighbour of the current node in the loop (on either side)
 				prev_index_1 = (neighbour_index - 1) % N 
 				next_index_1 = (neighbour_index + 1) % N 
+				#the variables prev_index_2 and next_index_2 represent the second node away from the current node in the loop (on either side)
 				prev_index_2 = (neighbour_index - 2) % N 
 				next_index_2 = (neighbour_index + 2) % N 
-					
+				
+				#adds a connection to the previous node in relation to the current node in the loop
 				self.nodes[neighbour_index].connections[prev_index_1] = 1
+				#adds a connection to the next node in relation to the current node in the loop
 				self.nodes[neighbour_index].connections[next_index_1] = 1
+				#adds a connection to the previous second node away from the current node in the loop
 				self.nodes[neighbour_index].connections[prev_index_2] = 1
+				#adds a connection to the next second node away from the current node in the loop
 				self.nodes[neighbour_index].connections[next_index_2] = 1
 
+		#loops through the nodes in the small world network
 		for (index, node) in enumerate(self.nodes):
 			for neighbour_index in range(index+1, N):
 				
+				#variable re_wire_prob is the probability that a node gets rewired
 				if np.random.random() < re_wire_prob:
+					#adds a connection from the current node in the loop to a random node
 					node.connections[neighbour_index] = 1
 					self.nodes[neighbour_index].connections[index] = 1	
 					
+					#loops through the nodes in the small world network
 					for neighbour_index in range(index+1, N):
-						if np.random.random() < 0.25:
+						#variable node_removal_prob is set to 0.25 as each node starts with 4 connections
+						#if one connection is added then one connection needs to be removed
+						node_removal_prob = 0.25
+						if np.random.random() < node_removal_prob:
+							#removes the connection between the current node in the loop and another random node
+							#that it is connected to
 							node.connections[neighbour_index] = 0
 							self.nodes[neighbour_index].connections[index] = 0
-		
+				
+
+
 	
 	def plot(self):
 
@@ -301,21 +336,61 @@ This section contains code for the main function- you should write some code for
 ==============================================================================================================
 '''
 
-def main(args):
+def command_line_args():
+	'''
+	This function creates the flags for the ring network and the small world network.
+	'''
 	
-	if '-ring_network' in args:
-		ring = Network()
-		ring.make_ring_network(int(args[2]))
-		ring.plot()
+	#creates the parser
+	parser = argparse.ArgumentParser()
 	
-	if '-small_world' in args:
-		small_world = Network()
-		if '-re_wire' in args:
-			small_world.make_small_world_network(int(args[2]),float(args[4]))
-		else:
-			small_world.make_small_world_network(int(args[2]))
+	#creates the arguments
+	parser.add_argument('-ring_network', action = 'store_true')
+	parser.add_argument('-small_world', action = 'store_true')
+	parser.add_argument('-re_wire', type = float, default = 0.2)
+	parser.add_argument('-N', type = int)
+
+	args = parser.parse_args()
+
+	#if there is no argument input for N then it is set to 10
+	if args.N is None:
+		args.N = 10
 		
+	if args.ring_network:
+		ring_network = True 
+	
+	if args.small_world:
+		parser.add_argument('N', type = int)
+		small_world = True 
+	
+	return args
+
+def run_task_4(args):
+	'''
+	This function runs task 4 with the values inputted into the command line
+	'''
+	
+	args = command_line_args()
+
+	if args.ring_network:
+		ring = Network()
+		N = args.N 
+		ring.make_ring_network(N)
+		ring.plot()
+
+	if args.small_world:
+		small_world = Network()
+		re_wire_prob = args.re_wire 
+		N = args.N 
+		small_world.make_small_world_network(N, re_wire_prob)
 		small_world.plot()
 
+def main():
+
+	run_task_4(command_line_args)
+
+
+	
+
 if __name__=="__main__":
-	main(sys.argv)
+	main()
