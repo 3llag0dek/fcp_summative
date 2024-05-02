@@ -373,16 +373,17 @@ def calculate_agreement(population, row, col, external=0.0):
 	Returns:
 			change_in_agreement (float)
 	'''
+	n_rows, n_cols = population.shape
+	neighbords = [population[(row-1) % n_rows , col] , population[(row + 1) % n_rows , col] , population[row , (col - 1) % n_cols] , population[row , (col+1) % n_cols]]
+	agreement = sum(neighbords) * population[row,col]
+	return agreement+external*population[row,col]
 
-	#Your code for task 1 goes here
-
-	return np.random * population
-
-def ising_step(population, external=0.0):
+def ising_step(population,alpha=1.0, external=0.0):
 	'''
 	This function will perform a single update of the Ising model
 	Inputs: population (numpy array)
 			external (float) - optional - the magnitude of any external "pull" on opinion
+   			alpha (float) - optioanl Probability parameter for fliping opinion
 	'''
 	
 	n_rows, n_cols = population.shape
@@ -390,11 +391,11 @@ def ising_step(population, external=0.0):
 	col  = np.random.randint(0, n_cols)
 
 	agreement = calculate_agreement(population, row, col, external=0.0)
-
-	if agreement < 0:
+	flip_probability = np.exp(-agreement / alpha)
+	if np.random.random() < flip_probability:
 		population[row, col] *= -1
 
-	#Your code for task 1 goes here
+	
 
 def plot_ising(im, population):
 	'''
@@ -433,14 +434,13 @@ def test_ising():
 	population = -np.ones((3, 3))
 	assert(calculate_agreement(population,1,1,1)==3), "Test 7"
 	assert(calculate_agreement(population,1,1,-1)==5), "Test 8"
-	assert(calculate_agreement(population,1,1,10)==14), "Test 9"
-	assert(calculate_agreement(population,1,1,-10)==-6), "Test 10"
+	assert(calculate_agreement(population,1,1,10)==-6), "Test 9"
+	assert(calculate_agreement(population,1,1,-10)==14), "Test 10"
 
 	print("Tests passed")
 
 
-def ising_main(population, alpha=None, external=0.0):
-	
+def ising_main(population, alpha=1.0, external=0.0):
 	fig = plt.figure()
 	ax = fig.add_subplot(111)
 	ax.set_axis_off()
@@ -450,9 +450,10 @@ def ising_main(population, alpha=None, external=0.0):
 	for frame in range(100):
 		# Iterating single steps 1000 times to form an update
 		for step in range(1000):
-			ising_step(population, external)
+			ising_step(population,alpha, external)
 		print('Step:', frame, end='\r')
 		plot_ising(im, population)
+
 
 
 '''
@@ -480,6 +481,13 @@ def flags_runcode():
 	'''
 	# Creates the parser
 	parser = argparse.ArgumentParser(description='FCP')
+
+	#create the arguments for Task 1
+	parser.add_argument('-ising_model',action='store_true')
+	parser.add_argument('-external',type=float,default=0.0)
+	parser.add_argument('-alpha', type= float ,default = 1.0)
+	parser.add_argument('-test_ising',action = 'store_true')
+			    
 
 	#Creates the arguments for Task 3
 	parser.add_argument('-network', nargs = '?', type = int)
@@ -522,7 +530,15 @@ def flags_runcode():
 		small_world.make_small_world_network(args.small_world, re_wire_prob)
 		small_world.plot()
 		plt.show()
-	
+		
+	#Runs ising model if flag is present
+	if args.ising_model:
+		population = np.random.choice([-1,1],(100, 100))
+		ising_main(population, alpha=args.alpha,external=args.external)
+    	
+	#Tests ising model if flag is present
+	if args.test_ising:
+        	test_ising()
 
 
 def main():
