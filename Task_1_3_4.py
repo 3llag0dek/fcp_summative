@@ -474,91 +474,61 @@ This section contains code for the main function- you should write some code for
 ==============================================================================================================
 '''
 
-def task3_flags():
+def flags_runcode():
 	'''
-	This function creates the flags for the randomly generated network
+	This function creates the flags for the code to run, and calls the function to run the code
 	'''
 	# Creates the parser
 	parser = argparse.ArgumentParser(description='FCP')
 
-	#Creates the arguments
-	parser.add_argument('-network', nargs = '?', type = int, default = 6 )
+	#Creates the arguments for Task 3
+	parser.add_argument('-network', nargs = '?', type = int)
 	parser.add_argument('-test_network', action='store_true')
 
-	args = parser.parse_args()
+	
+	#creates the arguments for Task 4
+	parser.add_argument('-ring_network', nargs = '?', type = int)
+	parser.add_argument('-small_world', nargs = '?', type = int)
+	parser.add_argument('-re_wire', type = float, default = 0.2)
 
+	args = parser.parse_args()
+	
+	# Calls the make random network function for task 3 to run
+	if args.network:
+		network1 = Network()
+		network1.make_random_network(args.network, 0.7)
+		network1.plot()
+		plt.show()
+		
+		print('Mean Degree:', network1.get_mean_degree())
+		print('Mean Path Length:', network1.get_mean_path_length())
+		print('Mean Clustering Co-efficient:', network1.get_mean_clustering())
+	
+	# Tests task 3 if flag is run
 	if args.test_network:
+		test_networks()
 		print('Testing Task 3')
 
-	network_size = args.network
-
-	return network_size
-
-
-def run_task3():
-	network1 = Network()
-
-	size_network = task3_flags()
-	network1.make_random_network(size_network, 0.7)
-	network1.plot()
-	plt.show()
-	
-	print('Mean Degree:', network1.get_mean_degree())
-	print('Mean Path Length:', network1.get_mean_path_length())
-	print('Mean Clustering Co-efficient:', network1.get_mean_clustering())
-
-def command_line_args_4():
-	'''
-	This function creates the flags for the ring network and the small world network.
-	'''
-	
-	#creates the parser
-	parser = argparse.ArgumentParser()
-	
-	#creates the arguments
-	parser.add_argument('-ring_network', action = 'store_true')
-	parser.add_argument('-small_world', action = 'store_true')
-	parser.add_argument('-re_wire', type = float, default = 0.2)
-	parser.add_argument('-N', type = int)
-
-	args = parser.parse_args()
-
-	#if there is no argument input for N then it is set to 10
-	if args.N is None:
-		args.N = 10
-		
-	if args.ring_network:
-		ring_network = True 
-	
-	if args.small_world:
-		parser.add_argument('N', type = int)
-		small_world = True 
-	
-	return args
-
-def run_task_4(args):
-	'''
-	This function runs task 4 with the values inputted into the command line
-	'''
-	
-	args = command_line_args_4()
-
+	# Runs Ring Network function if flag present
 	if args.ring_network:
 		ring = Network()
-		N = args.N 
-		ring.make_ring_network(N)
+		ring.make_ring_network(args.ring_network)
 		ring.plot()
+		plt.show()
 
+	# Runs Small World Fucntion if flag is present
 	if args.small_world:
 		small_world = Network()
 		re_wire_prob = args.re_wire 
-		N = args.N 
-		small_world.make_small_world_network(N, re_wire_prob)
+		small_world.make_small_world_network(args.small_world, re_wire_prob)
 		small_world.plot()
+		plt.show()
+	
+
 
 def main():
-	run_task3()
-	run_task_4(command_line_args_4)
+	flags_runcode()
+	
 
 if __name__=="__main__":
 	main()
