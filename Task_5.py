@@ -2,7 +2,6 @@ import argparse
 import random
 import numpy as np
 import matplotlib.pyplot as plt
-import networkx as nx
 import unittest
 
 
@@ -70,43 +69,52 @@ def defuant(threshold = 0.2, beta=0.2, use_network=False, num_nodes = 10, num_ti
     else:
         # Simulation with small-world network
         # Define parameters for the Watts-Strogatz small-world graph
-        k_neighbors = 4 
         p_rewiring = 0.2
-        #define array of mean opinion
-        meanOpinion = [0.0]*num_timesteps
-        # Create a Watts-Strogatz small-world graph
-        G = nx.watts_strogatz_graph(num_nodes, k_neighbors, p_rewiring)
 
-        # Assign initial random values between 0 and 1 to each node as opinions
-        for node in G.nodes():
-            G.nodes[node]['value'] = random.random()
+        # Define array of mean opinion
+        meanOpinion = np.zeros(num_timesteps)
+
+        network = Network()
+        network.make_small_world_network(num_nodes, p_rewiring)
 
         fig, ax = plt.subplots(figsize=(6, 6))
+
+        # Calculate node positions in a circle
+        radius = 5
+        theta = np.linspace(0, 2*np.pi, num_nodes, endpoint=False)
+        positions = np.column_stack([radius*np.cos(theta), radius*np.sin(theta)])
 
         for timestep in range(num_timesteps):
             ax.clear()
             for i in range(num_nodes):
-                #assign random node 
-                random_node = random.choice(list(G.nodes()))
-                #adding total opinions up in timestep
-                neighbours = list(G.neighbors(random_node))
+                # Adding total opinions up in timestep
+                neighbours = network.nodes[i].neighbors
                 # Choose a random neighbor
-                neighbour = random.choice(neighbours)  
-                if abs(G.nodes[random_node]['value'] - G.nodes[neighbour]['value']) < threshold:
+                neighbour = random.choice(neighbours)
+                if abs(network.nodes[i].value - network.nodes[neighbour].value) < threshold:
                     # Update opinions based on the threshold condition
-                    G.nodes[random_node]['value'] += beta * (G.nodes[neighbour]['value'] - G.nodes[random_node]['value'])
-                    G.nodes[neighbour]['value'] += beta * (G.nodes[random_node]['value'] - G.nodes[neighbour]['value'])
-            for node in G.nodes():
-                meanOpinion[timestep] += G.nodes[node]['value']
-            node_colors = [G.nodes[node]['value'] for node in G.nodes()]
-            nx.draw(G, pos=nx.circular_layout(G), ax=ax, node_color=node_colors, cmap=plt.cm.Reds, with_labels=True)
+                    network.nodes[i].value += beta * (network.nodes[neighbour].value - network.nodes[i].value)
+                    network.nodes[neighbour].value += beta * (network.nodes[i].value - network.nodes[neighbour].value)
+            for i in range(num_nodes):
+                meanOpinion[timestep] += network.nodes[i].value
+            node_colors = [network.nodes[i].value for i in range(num_nodes)]
+            # plot nodes
+            plt.scatter(positions[:, 0], positions[:, 1], s=100, c=node_colors, cmap=plt.cm.Reds)
+            # Plot connections
+            for i in range(num_nodes):
+                x1, y1 = positions[i]
+                for neighbor in network.nodes[i].neighbors:
+                    x2, y2 = positions[neighbor]
+                    plt.plot([x1, x2], [y1, y2], 'k-', alpha=0.3)
+            
             ax.set_title('Opinion Dynamics on Small-World Network (Timestep {})'.format(timestep))
+            plt.axis('off')  # Turn off axis
             plt.pause(show_network_delay)
-        #finding mean of each timestep
-        for i in range(len(meanOpinion)):
-            meanOpinion[i] = meanOpinion[i]/num_nodes
+
+        # Finding mean of each timestep
+        meanOpinion /= num_nodes
+
         # Plotting the mean opinion over all timesteps
-        # close previous plot
         plt.close()
         plt.plot(range(num_timesteps), meanOpinion)
         plt.xlabel('Timestep')
@@ -135,6 +143,59 @@ def parse_args():
     parser.add_argument('--threshold', type=float, default=0.2, help='Value for threshold (default: 0.2)')
 
     return parser.parse_args()
+
+class Node:
+    def __init__(self, value, number, neighbors=None):
+        # Initialize a Node object with a value, index number, and neighbors list
+        self.value = value
+        self.index = number
+        self.neighbors = neighbors if neighbors else []
+
+class Network:
+    def __init__(self, nodes=None):
+        # Initialize a Network object with a list of nodes
+        self.nodes = nodes if nodes is not None else []
+
+    def make_small_world_network(self, N, re_wire_prob=0.2, max_connections=2):
+        # Function to create a small-world network
+        
+        # Create N nodes and add them to the network
+        self.nodes = []
+        for node_number in range(N):
+            value = np.random.random()
+            self.nodes.append(Node(value, node_number))
+
+        # Connect each node to its neighbors in a ring-like structure
+        for index, node in enumerate(self.nodes):
+            prev_index_1 = (index - 1) % N
+            next_index_1 = (index + 1) % N
+            prev_index_2 = (index - 2) % N
+            next_index_2 = (index + 2) % N
+            node.neighbors.extend([prev_index_1, next_index_1, prev_index_2, next_index_2])
+
+        # Rewire connections with a certain probability while ensuring maximum connections per node
+        for index, node in enumerate(self.nodes):
+            for neighbor_index in node.neighbors:
+                if np.random.random() < re_wire_prob:
+                    # Find available neighbors for rewiring
+                    available_neighbors = [i for i in range(N) if i != index and i not in node.neighbors and i not in self.nodes[neighbor_index].neighbors]
+                    if available_neighbors:
+                        # Determine the number of connections to rewire
+                        rewired_connections = min(max_connections, len(available_neighbors))
+                        # Randomly select new neighbors to connect to
+                        rewired_neighbors = np.random.choice(available_neighbors, rewired_connections, replace=False)
+                        for new_neighbor_index in rewired_neighbors:
+                            old_neighbor_index = node.neighbors.index(neighbor_index)
+                            old_neighbor = self.nodes[neighbor_index]
+                            # Remove old connection
+                            old_neighbor.neighbors.remove(index)
+                            node.neighbors.remove(neighbor_index)
+                            # Connect to the new neighbor
+                            node.neighbors.insert(old_neighbor_index, new_neighbor_index)
+                            self.nodes[new_neighbor_index].neighbors.append(index)
+                            # After connecting to a new neighbor, break the loop to prevent multiple connections
+                            break
+
 
 class TestDefuantSimulation(unittest.TestCase):
     
