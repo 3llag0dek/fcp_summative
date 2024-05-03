@@ -8,6 +8,7 @@ Following imports are needed: (for tasks 1, 3 and 4)
 - matplotlib.pyplot as plt
 - matplotlib.cm as cm
 - argparse
+- random
 
 Following imports are needed: (for tasks 2 and 5)
 - argparse
