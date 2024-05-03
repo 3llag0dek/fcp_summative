@@ -1,5 +1,8 @@
 # FCP_summative
 
+Link to github repository:
+https://github.com/3llag0dek/fcp_summative.git
+
 Following imports are needed: (for tasks 1, 3 and 4)
 - numpy as np
 - matplotlib.pyplot as plt
