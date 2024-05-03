@@ -23,3 +23,11 @@ python task_1_3_4.py -small_world <number of nodes>
 python task_1_3_4.py -small_world <number of nodes> -re_wire <re-wire probability>
   (this should output a small world network with the amount of nodes and rewire probability entered by the user)
 
+Running task 1:
+python task_1_3_4.py -ising_model -external<the strength of external opinion>-alpha<probability of fliping opinion>
+(this should plot an animation for changing population opinion)
+python task_1_3_4.py -test_ising
+(this should test the code and return :
+"tests passed" if there is no mistake in calculating the agreement
+"test7-10" if there is an error with the external variable in calculating the agreement )
+else: a mistake in the equation)
